@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.rythmengine.RythmEngine;
 
-import com.scaleapp.lib.FileOps;
+import com.scaleapp.lib.files.FileOps;
 
 public class SqlTemplate {
 	private static File sqlFilesPath = new File(new File("scripts"), "db").getAbsoluteFile();

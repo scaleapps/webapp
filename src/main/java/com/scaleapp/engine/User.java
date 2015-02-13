@@ -1,35 +1,42 @@
 package com.scaleapp.engine;
 
 import java.security.SecureRandom;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
 import com.scaleapp.lib.BCrypt;
-import com.scaleapp.lib.JsonHelper;
-import com.scaleapp.lib.Utils;
+import com.scaleapp.lib.SLog;
 
 
 public class User {
-    private static final Logger log = LoggerFactory.getLogger(User.class);
-    private long id = -1;
+    private static final String TAG = "User";
+	private UUID uid = null;
     private String username = null;
     private String hashp = null;
-    private AppSession session = null;
+    private UserSession session = null;
     
-    public AppSession getSession() {
+    public User() {
+    	uid = UUID.randomUUID();
+    }
+    
+    public UserSession getSession() {
     	return session;
     }
-    public void setSession(AppSession session) {
+    
+    public void setSession(UserSession session) {
     	this.session = session;
+    }
+    
+    public String getHashp() {
+    	return this.hashp;
+    }
+    
+    public void setHashp(String hashp) {
+    	this.hashp = hashp;
     }
     
     public void setPassword(String password) {
@@ -40,131 +47,81 @@ public class User {
     	return BCrypt.checkpw(password, hashp);
     }
     
-    public long getId() {
-        return id;
+    public UUID getUid() {
+        return uid;
     }
 
     public String getUserName(){
         return username;
     }
     
-    public void setId(long id){
-        this.id = id;     
+    public void setUid(UUID uid){
+        this.uid = uid;     
     }
     
     public void setUserName(String s){
         username = s;
     }    
     
-    public String getTime() {
-    	return Utils.getTimeS(ObjId.getTimeMillis(id));
-    }
-    
-    static public long put(int vsid, User user) {
-    	long id = -1;
-    	Connection con = null;
-    	PreparedStatement st = null;
-    	ResultSet rs = null;
-    	try {
-    		con = SqlCon.getCon(vsid);
-    		con.setAutoCommit(true);
-    		st = con.prepareStatement("INSERT INTO Users(username, hashp) VALUES(?, ?) RETURNING id;");
-    		st.setString(1, user.username);
-    		st.setString(2, user.hashp);
-    		if (!st.execute()) {
-    			throw new SQLException("no result set");
-    		}
-    		rs = st.getResultSet();
-    		if (rs.next()) {
-    			id = rs.getLong(1);
-    		} else {
-    			throw new SQLException("no returning id");
-    		}
-    	} catch (SQLException e) {
-    		log.error("exception", e);
-    	} finally {
-    		SqlCon.close(con, st, rs);
-    	}
-    	return id;
+    static public void insert(User user) {
+    	Session session = CasClient.getSession();
+    	PreparedStatement st = session.prepare("INSERT INTO mykeyspace.users "
+    			+ "(uid, username, hashp) "
+    			+ " VALUES (?, ?, ?);");
+		session.execute( new BoundStatement(st).bind(
+		   user.getUid(),
+		   user.getUserName(),
+		   user.getHashp()
+		   ));
     }
 
-    static public boolean delete(long id) {
-		int vsid = ObjId.getVsid(id);
-		Connection con = null;
-		PreparedStatement st = null;
-		boolean success = false;
-
-		try {
-			con = SqlCon.getCon(vsid);
-			st = con.prepareStatement("DELETE FROM Users WHERE id = ?;");
-			st.setLong(1, id);
-    		st.executeUpdate();
-    		con.commit();
-    		success = true;
-    	} catch (SQLException e) {
-    		log.error("exception", e);
-    	} finally {
-    		SqlCon.close(con, st, null);
-    	}
-
-    	return success;
+    static public void delete(UUID uid) {
+    	Session session = CasClient.getSession();
+		
+    	PreparedStatement st = session.prepare("DELETE FROM mykeyspace.users "
+		   + " WHERE uid = ?;");
+		session.execute( new BoundStatement(st).bind(
+				uid
+		   ));
     }
     
-    static public User get(long id) {
-    	Connection con = null;
-    	PreparedStatement st = null;
-    	ResultSet rs = null;
-    	User user = null;
+    static public User lookup(UUID uid) {
+    	Session session = CasClient.getSession();
+		
+    	PreparedStatement st = session.prepare("SELECT * FROM mykeyspace.users "
+		   + " WHERE uid = ?;");
     	
-    	int vsid = ObjId.getVsid(id);
-    	try {
-    		con = SqlCon.getCon(vsid);
-    		st = con.prepareStatement("SELECT id, username, hashp FROM Users WHERE id = ?;");
-    		st.setLong(1, id);
-    		rs = st.executeQuery();
-            if (rs.next()) {
-            	user = new User();
-            	user.id = rs.getLong(1);
-            	user.username = rs.getString(2);
-            	user.hashp = rs.getString(3);
-            }
-    		con.commit();
-    	} catch (SQLException e) {
-    		log.error("exception", e);
-    	} finally {
-    		SqlCon.close(con, st, rs);
-    	}
-    	
-    	return user;
-    }
-    
-    static public List<Long> allIds(int vsid) {
-    	Connection con = null;
-    	PreparedStatement st = null;
-    	ResultSet rs = null;
-    	List<Long> ids = new ArrayList<Long>();
-    	try {
-    		con = SqlCon.getCon(vsid);
-    		st = con.prepareStatement("SELECT id FROM Users;");
-    		rs = st.executeQuery();
-            while (rs.next()) {
-            	ids.add(rs.getLong(1));
-            }
-    		con.commit();
-    	} catch (SQLException e) {
-    		log.error("exception", e);
-    	} finally {
-    		SqlCon.close(con, st, rs);
-    	}
-    	
-    	return ids;
-    }
+		ResultSet rs = session.execute( new BoundStatement(st).bind(
+		   UUID.randomUUID()
+		   ));
+		Row row = rs.one();
+		User user = new User();
+		user.setUid(row.getUUID("uid"));
+		user.setHashp(row.getString("hashp"));
+		user.setUserName(row.getString("username"));
+		return user;
+	}
     
     public UserInfo toUserInfo() {
     	UserInfo inf = new UserInfo();
     	inf.username = this.username;
-    	inf.uid = this.id;
-    	
+    	inf.uid = this.uid;
     	return inf;
     }
+    
+   	public static void createSchema() {
+   		CasClient.getSession().execute("CREATE TABLE mykeyspace.users ("
+ 			   + "uid uuid PRIMARY KEY,"
+ 			   + "username text,"
+ 			   + "hashp text);");
+   		
+   		CasClient.getSession().execute("CREATE INDEX uid_index ON mykeyspace.users (uid);");
+   	}
+
+   	public static void deleteSchema() {
+   		SLog.i(TAG, "dropping index");
+   		CasClient.getSession().execute("DROP INDEX IF EXISTS mykeyspace.uid_index;");
+   		SLog.i(TAG, "dropping table");
+   		CasClient.getSession().execute("DROP TABLE IF EXISTS mykeyspace.users;");
+   	}
 }

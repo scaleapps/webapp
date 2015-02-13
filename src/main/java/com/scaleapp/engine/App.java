@@ -12,10 +12,10 @@ import org.slf4j.LoggerFactory;
 
 import com.scaleapp.lib.CryptLib;
 import com.scaleapp.lib.JsonHelper;
-import com.scaleapp.lib.NsHttpRequest;
-import com.scaleapp.lib.NsHttpResponse;
-import com.scaleapp.lib.NsHttpServer;
 import com.scaleapp.lib.SLog;
+import com.scaleapp.lib.nshttp.NsHttpRequest;
+import com.scaleapp.lib.nshttp.NsHttpResponse;
+import com.scaleapp.lib.nshttp.NsHttpServer;
 
 
 public class App 

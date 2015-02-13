@@ -1,6 +1,10 @@
-package com.scaleapp.lib;
+package com.scaleapp.lib.nshttp;
 
 import javax.net.ssl.SSLEngine;
+
+import com.scaleapp.lib.INsHttpServerHandler;
+import com.scaleapp.lib.SLog;
+import com.scaleapp.lib.SSLSocketLib;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;

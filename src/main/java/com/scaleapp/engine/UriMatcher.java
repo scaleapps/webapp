@@ -10,8 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.scaleapp.lib.INsHttpServerHandler;
-import com.scaleapp.lib.NsHttpRequest;
-import com.scaleapp.lib.NsHttpResponse;
+import com.scaleapp.lib.nshttp.NsHttpRequest;
+import com.scaleapp.lib.nshttp.NsHttpResponse;
 
 public class UriMatcher implements INsHttpServerHandler {
     private static final Logger log = LoggerFactory.getLogger(UriMatcher.class);
@@ -76,13 +76,6 @@ public class UriMatcher implements INsHttpServerHandler {
 				// TODO Auto-generated method stub
 				
 				return AppHandlers.staticFiles(request, match.group(1));
-			}});
-		
-		handlers.put(Pattern.compile("^/shards/(\\d+)$"), new UriHandler() {
-			@Override
-			public NsHttpResponse handle(Matcher match, NsHttpRequest request) throws Exception {
-				// TODO Auto-generated method stub
-				return AppHandlers.shards(request, Integer.parseInt(match.group(1)));
 			}});
 		
 		handlers.put(Pattern.compile("^/user/join$"), new UriHandler() {

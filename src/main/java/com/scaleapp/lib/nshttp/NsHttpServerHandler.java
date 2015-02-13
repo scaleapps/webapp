@@ -1,10 +1,13 @@
-package com.scaleapp.lib;
+package com.scaleapp.lib.nshttp;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.concurrent.ExecutorService;
+
+import com.scaleapp.lib.INsHttpServerHandler;
+import com.scaleapp.lib.SLog;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;

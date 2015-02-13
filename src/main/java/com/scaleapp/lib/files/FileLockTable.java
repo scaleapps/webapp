@@ -1,4 +1,4 @@
-package com.scaleapp.lib;
+package com.scaleapp.lib.files;
 
 public class FileLockTable {
 	private static final int bucketsCount = 257;

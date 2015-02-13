@@ -1,7 +1,10 @@
-package com.scaleapp.lib;
+package com.scaleapp.lib.nshttp;
 
 import java.io.UnsupportedEncodingException;
 import java.security.KeyPair;
+
+import com.scaleapp.lib.Base64;
+import com.scaleapp.lib.CryptLib;
 
 public class NsHttpCookie {
 	public String key = null;

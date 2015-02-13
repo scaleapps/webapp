@@ -1,4 +1,4 @@
-package com.scaleapp.lib;
+package com.scaleapp.lib.nshttp;
 
 import java.security.KeyPair;
 import java.util.ArrayList;

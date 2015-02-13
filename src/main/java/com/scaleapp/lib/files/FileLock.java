@@ -1,4 +1,4 @@
-package com.scaleapp.lib;
+package com.scaleapp.lib.files;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;

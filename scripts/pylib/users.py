@@ -22,6 +22,9 @@ import cmd
 logging.config.dictConfig(settings.LOGGING)
 log = logging.getLogger('main')
 
+def get_home():
+    return os.path.join('/home', get_user())
+
 def get_user():
     _, stdout, stderr, _ =  cmd.exec_cmd2("who am i | awk '{print $1}'", throw = True)
     return stdout[0]

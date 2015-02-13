@@ -1,4 +1,4 @@
-package com.scaleapp.lib;
+package com.scaleapp.lib.files;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -15,6 +15,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.scaleapp.lib.Base64;
+import com.scaleapp.lib.Base64DecoderException;
+import com.scaleapp.lib.SLog;
 
 class FileTagObject {
 	private static final int SIGN1 = 2423511;

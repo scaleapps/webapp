@@ -52,7 +52,7 @@ public class SLog {
     private SPostLogger postLogger = null;
     private ExecutorService exec = null;
     private int logSize = LOG_FILE_SIZE_LIMIT;
-    
+    private boolean stdOut = false;
     
     private LinkedList<String> msgQueue = new LinkedList<String>();
     
@@ -64,6 +64,11 @@ public class SLog {
 		return new File(logPath + ".old.log");		
 	}
 	
+	public void setStdout(boolean val)
+	{
+		this.stdOut = val;
+	}
+
 	public static void startDefault() {
 		SLog.start(false, new File("slog.log").getAbsolutePath(), new PostLogger());
 		SLog.getInstance().setLogSize(3000000);
@@ -168,7 +173,9 @@ public class SLog {
 			try {
 		    	out = new BufferedWriter(new FileWriter(logFile, true));
 	    		out.write(message + '\n');
-		    	out.flush();
+		    	//out.flush();
+	    		if (stdOut)
+	    			System.out.println(message);
 			} catch (IOException e) {
 			} finally {
 				if (out != null)

@@ -1,8 +1,10 @@
 package com.scaleapp.engine;
 
+import java.util.UUID;
+
 public class UserInfo {
 	public String username;
-	public long uid = -1;
+	public UUID uid;
 
 	public static UserInfo parseString(String json) {
 		UserInfo result = new JsonTransformer().parse(json, UserInfo.class);

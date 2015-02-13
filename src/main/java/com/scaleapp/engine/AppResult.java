@@ -1,9 +1,11 @@
 package com.scaleapp.engine;
 
+import java.util.UUID;
+
 public class AppResult {
 	public int error = AppError.UNDEFINED;
 	public String errorS = AppError.getS(AppError.UNDEFINED);
-	public long uid = -1;
+	public UUID uid;
 	public String token = null;
 	public UserInfo user = null;
 	
@@ -28,7 +30,7 @@ public class AppResult {
 		this.user = user;
 	}
 	
-	public void setUid(long uid) {
+	public void setUid(UUID uid) {
 		this.uid = uid;
 	}
 	
@@ -36,7 +38,7 @@ public class AppResult {
 		this.token = token;
 	}
 	
-	public AppResult(int error, long uid) {
+	public AppResult(int error, UUID uid) {
 		setError(error);
 		setUid(uid);
 	}

@@ -10,8 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.scaleapp.lib.JsonHelper;
-import com.scaleapp.lib.NsHttpRequest;
-import com.scaleapp.lib.NsHttpResponse;
+import com.scaleapp.lib.SLog;
+import com.scaleapp.lib.nshttp.NsHttpRequest;
+import com.scaleapp.lib.nshttp.NsHttpResponse;
 
 public class AppHandlers {
     private static final Logger log = LoggerFactory.getLogger(AppHandlers.class);
@@ -21,6 +22,8 @@ public class AppHandlers {
     public static final String templatesPath = "templates";
 
     public static final String sessionCookieName = "AUTH";
+
+	private static final String TAG = "AppHandlers";
     private static volatile RythmEngine engine = null;
     
 	public static NsHttpResponse logout(NsHttpRequest request) throws UnsupportedEncodingException {
@@ -42,74 +45,25 @@ public class AppHandlers {
 		return renderTemplateSimple("profile.html");
 	}
 
-	public static NsHttpResponse shards(NsHttpRequest request, int vsid) throws Exception {
-		NsHttpResponse response = new NsHttpResponse();
-
-		switch (request.getMethod()) {
-			case NsHttpRequest.PUT:
-				ShardConf conf = ShardConf.loadFromString(new String(request.getContentBytes(), "UTF-8"));
-				log.info("loading conf=" + conf.toString());
-
-				if (conf.vsid != vsid) {
-					throw new Exception("conf.vsid=" + conf.vsid + " vs. vsid=" + vsid);
-				}
-
-				if (ShardConfCache.getInstance().update(conf)) {
-					response.setStatus(NsHttpResponse.OK);
-				} else {
-					log.error("not found shard with vsid=" + vsid);
-					response.setStatus(NsHttpResponse.INTERNAL_SERVER_ERROR);
-				}
-
-				break;
-			case NsHttpRequest.DELETE:
-				if (ShardConfCache.getInstance().delete(vsid)) {
-					response.setStatus(NsHttpResponse.OK);
-				} else {
-					log.error("not found shard with vsid=" + vsid);
-					response.setStatus(NsHttpResponse.NOT_FOUND);
-				}
-				break;
-			default:
-				throw new Exception("unsupported method=" + request.getMethod());
-		}
-
-		return response;
-	}
-
 	public static NsHttpResponse userJoin(NsHttpRequest request) throws Exception {
 		NsHttpResponse response = new NsHttpResponse();
 		switch (request.getMethod()) {
 			case NsHttpRequest.PUT:
 				AppResult result = new AppResult();
 				UserAuthInfo inf = UserAuthInfo.parseString(new String(request.getContentBytes(), "UTF-8"));
-				log.info("adding user=" + inf.toString());
+				SLog.i(TAG, "adding user=" + inf.toString());
 				User user = new User();
 				user.setUserName(inf.username);
 				user.setPassword(inf.password);
-				long uid = User.put(ShardConfCache.getInstance().getRandomShard(), user);
-				if (uid == -1) {
-					log.error("cant put user");
-					result.setError(AppError.ACCOUNT_ALREADY_REGISTRED);
-					response.setJson(result.toString());
-					response.setStatus(NsHttpResponse.OK);
-					return response;
-				}
-				log.info("saving username");
-				DhtResult rs = Dht.getInstance().put("USERNAME", inf.username, Long.toString(uid));
-				if (rs.error != 0) {
-					log.error("cant put username");
-					if (uid != -1)
-						User.delete(uid);
-					result.setError(AppError.ACCOUNT_ALREADY_REGISTRED);
-					response.setJson(result.toString());
-					response.setStatus(NsHttpResponse.OK);
-					return response;
-				}
-
-				log.info("user=" + user.getUserName() + " was added, id=" + uid);
+				User.insert(user);
+				SLog.i(TAG, "saving username");
+				UserName uname = new UserName();
+				uname.setUid(user.getUid());
+				uname.setUserName(user.getUserName());
+				UserName.insert(uname);
+				log.info("user=" + user.getUserName() + " was added, id=" + user.getUid());
 				result.setError(AppError.SUCCESS);
-				result.setUid(uid);
+				result.setUid(user.getUid());
 				response.setJson(result.toString());
 				response.setStatus(NsHttpResponse.OK);
 				break;
@@ -237,17 +191,11 @@ public class AppHandlers {
 		String sessionValue = request.getHeaders("X-SESSION-TOKEN");
 		if (sessionValue == null)
 			return null;
+
+		UserSession usession = UserSession.lookup(sessionValue);
+		User user = User.lookup(usession.getUid());
+		user.setSession(usession);
 		
-		DhtResult rs = Dht.getInstance().get("SESSION", sessionValue);
-		if (rs.error != AppError.SUCCESS)
-			return null;
-		
-		AppSession session = AppSession.parseString(rs.value);
-		User user = User.get(session.uid);
-		if (user == null)
-			return null;
-		
-		user.setSession(session);
 		return user;
 	}
 	
@@ -259,44 +207,14 @@ public class AppHandlers {
 				
 				UserAuthInfo inf = UserAuthInfo.parseString(new String(request.getContentBytes(), "UTF-8"));
 				log.info("loging user=" + inf.toString());
-				DhtResult rs = Dht.getInstance().get("USERNAME", inf.username);
-				if (rs.error != AppError.SUCCESS) {
-					result.setError(AppError.ACCOUNT_NOT_FOUND);
-					response.setJson(result.toString());
-					response.setStatus(NsHttpResponse.OK);
-					return response;
-				}
-				
-				long uid = Long.parseLong(rs.value);
-				User user = User.get(uid);
-				if (user == null) {
-					result.setError(AppError.ACCOUNT_NOT_FOUND);
-					response.setJson(result.toString());
-					response.setStatus(NsHttpResponse.OK);
-					return response;
-				}
-				
-				if (!user.checkPassword(inf.password)) {
-					result.setError(AppError.ACCOUNT_LOGIN_OR_PASSWORD_INVALID);
-					response.setJson(result.toString());
-					response.setStatus(NsHttpResponse.OK);
-					return response;
-				}
-				
-				AppSession session = AppSession.generate(user.getId(), 24*60*60*1000); //1 day
-				rs = Dht.getInstance().put("SESSION", session.value, session.toString());
-				if (rs.error != AppError.SUCCESS) {
-					result.setError(AppError.INTERNAL_SERVER_ERROR);
-					response.setJson(result.toString());
-					response.setStatus(NsHttpResponse.OK);
-					return response;
-				}
-					
-				log.info("user " + user.getUserName() + " logged session=" + session.value);
-				
+				UserName uname = UserName.lookup(inf.username);
+				User user = User.lookup(uname.getUid());
+				UserSession usession = UserSession.generate(user.getUid(), 24*60*60*1000); //1 day
+				UserSession.insert(usession);
+				log.info("user " + user.getUserName() + " logged session=" + usession.getValue());
 				result.setError(AppError.SUCCESS);
-				result.setUid(uid);
-				result.setToken(session.value);
+				result.setUid(user.getUid());
+				result.setToken(usession.getValue());
 				response.setJson(result.toString());
 				response.setStatus(NsHttpResponse.OK);
 				break;
@@ -324,7 +242,7 @@ public class AppHandlers {
 				
 				result.setError(AppError.SUCCESS);
 				result.setUser(user.toUserInfo());
-				result.setUid(user.getId());
+				result.setUid(user.getUid());
 				response.setJson(result.toString());
 				response.setStatus(NsHttpResponse.OK);
 				break;
@@ -349,7 +267,7 @@ public class AppHandlers {
 					return response;
 				}
 
-				Dht.getInstance().remove("SESSION", user.getSession().value);
+				UserSession.delete(user.getSession().getValue());
 				result.setError(AppError.SUCCESS);
 				response.setJson(result.toString());
 				response.setStatus(NsHttpResponse.OK);

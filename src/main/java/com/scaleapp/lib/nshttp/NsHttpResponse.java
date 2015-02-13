@@ -1,4 +1,4 @@
-package com.scaleapp.lib;
+package com.scaleapp.lib.nshttp;
 
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 
 import javax.activation.MimetypesFileTypeMap;
+
+import com.scaleapp.lib.files.FileOps;
 
 public class NsHttpResponse {
 	public static final int CONTINUE = 100;

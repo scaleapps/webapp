@@ -1,4 +1,4 @@
-package com.scaleapp.lib;
+package com.scaleapp.lib.files;
 
 import java.util.HashMap;
 import java.util.Map;
