@@ -6,12 +6,15 @@ import time
 import inspect
 import logging
 
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+#currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+#parentdir = os.path.dirname(currentdir)
+#sys.path.insert(0,parentdir) 
 
 import settings
+import dictconfig
 from cmd import StdFp, StdThread
 
-logging.config.dictConfig(settings.LOGGING)
+dictconfig.dictConfig(settings.LOGGING)
 
 log = logging.getLogger('main')
 
@@ -59,13 +62,14 @@ def ssh_cmd(ssh, cmd, throw = False, log = None):
     return rc, out_lines, err_lines
 
 class SshExec:
-    def __init__(self, log, host, user, passwd = None, key_file = None):
+    def __init__(self, log, host, user, passwd = None, key_file = None, timeout = None):
         self.host = host
         self.user = user
         self.passwd = passwd
         self.key_file = key_file
         self.log = log
-  
+        self.timeout = timeout
+
         if self.key_file != None:
             self.pkey = paramiko.RSAKey.from_private_key_file(self.key_file)
         else:
@@ -73,9 +77,11 @@ class SshExec:
   
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.ssh.connect(self.host, username=self.user, password = self.passwd, pkey=self.pkey)
-
-        self.rdir = os.path.join(os.path.join('/home', self.user), 'sshexec')
+        self.ssh.connect(self.host, username=self.user, password = self.passwd, pkey=self.pkey, timeout = self.timeout)
+        if self.user == 'root':
+            self.rdir = os.path.join('/root', 'sshexec')
+        else:
+            self.rdir = os.path.join(os.path.join('/home', self.user), 'sshexec')
 
         self.ssh.exec_command('mkdir ' + self.rdir)
         self.ftp = self.ssh.open_sftp()
@@ -98,6 +104,6 @@ class SshExec:
         return self.ftp.chdir(path)
 
 if __name__ == '__main__':
-    ssh = SshExec(log, "192.168.23.128", "Administrator", "1q2w3eQAZ")
-    ssh.cmd("mkdir c:\\tester")
+    ssh = SshExec(log, "10.30.18.211", "root", "1q2w3es5")
+    ssh.cmd("ps aux")
 

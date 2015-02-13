@@ -19,10 +19,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 import settings
 
 logging.config.dictConfig(settings.LOGGING)
-
 log = logging.getLogger('main')
-
-  
 
 def exec_cmd(cmd, output = False):
     args = cmd.split()
@@ -131,7 +128,7 @@ class Cmd():
         if self.rc != 0 and self.throw:
             raise Exception("CMD:" + self.cmd + ":rc:" + str(self.rc))
         
-def exec_cmd2(cmd, throw = False, elog = None):
+def exec_cmd2(cmd, curr_user = False, throw = False, elog = None):
     c = Cmd(cmd, throw = throw, elog = elog)
     c.run()
     return c.rc , c.stdout.lines, c.stderr.lines, c
@@ -145,5 +142,5 @@ def exec_cmd2_list(cmds, elog = None):
     return rcs
      
 if __name__=="__main__":
-    exec_cmd2("ps auxf")
+    exec_cmd2("ps ax")
 

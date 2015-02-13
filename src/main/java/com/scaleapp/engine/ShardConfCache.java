@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.scaleapp.lib.Base64DecoderException;
 import com.scaleapp.lib.FileOps;
+import com.scaleapp.lib.RedBlackBST;
 
 
 

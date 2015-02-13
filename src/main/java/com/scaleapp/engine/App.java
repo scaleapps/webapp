@@ -88,9 +88,8 @@ public class App
 
     public void start() throws UnknownHostException {
     	log.info("App starting");
-    	
     	log.info("My host name is " + InetAddress.getLocalHost().getHostName());
-	SLog.startDefault();
+    	SLog.startDefault();
     	loadSignKp();
     	dbStart();
     	httpStart();
